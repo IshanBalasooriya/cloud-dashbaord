@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Which Claude, when</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper:       #E3E6DF;
+    --raised:      #F6F7F3;
+    --ink:         #17262B;
+    --ink-soft:    #55676D;
+    --rule:        #C4CAC1;
+    --chat:        #3D6491;
+    --code:        #2C6E53;
+    --cowork:      #7E4F7A;
+    --display: "Bricolage Grotesque", "Trebuchet MS", sans-serif;
+    --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    --shell: 62rem;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.55;
+  }
+
+  .shell {
+    max-width: var(--shell);
+    margin: 0 auto;
+    padding: 3.5rem 1.5rem 5rem;
+  }
+
+  /* ---------- masthead ---------- */
+
+  .masthead h1 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(2.6rem, 8vw, 4.4rem);
+    line-height: 0.95;
+    letter-spacing: -0.025em;
+    margin: 0 0 0.6rem;
+  }
+
+  .masthead p {
+    margin: 0;
+    max-width: 34rem;
+    color: var(--ink-soft);
+    font-size: 1.05rem;
+  }
+
+  .lanes {
+    display: flex;
+    gap: 4px;
+    margin: 1.75rem 0 3.25rem;
+  }
+  .lanes span { height: 5px; flex: 1; border-radius: 2px; }
+  .lanes span:nth-child(1) { background: var(--chat); }
+  .lanes span:nth-child(2) { background: var(--code); }
+  .lanes span:nth-child(3) { background: var(--cowork); }
+
+  /* ---------- section headings ---------- */
+
+  h2 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 1.5rem;
+    letter-spacing: -0.015em;
+    margin: 0 0 0.35rem;
+  }
+
+  .lede {
+    color: var(--ink-soft);
+    margin: 0 0 1.5rem;
+    max-width: 38rem;
+  }
+
+  section { margin-bottom: 4rem; }
+
+  /* ---------- router ---------- */
+
+  .router {
+    background: var(--raised);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 1.75rem;
+  }
+
+  @media (min-width: 40rem) {
+    .router { padding: 2.25rem 2.5rem; }
+  }
+
+  .q + .q { margin-top: 1.75rem; padding-top: 1.75rem; border-top: 1px solid var(--rule); }
+
+  .q[hidden] { display: none; }
+
+  .q h3 {
+    font-family: var(--body);
+    font-weight: 600;
+    font-size: 1.05rem;
+    margin: 0 0 0.9rem;
+  }
+
+  .opts { display: grid; gap: 0.6rem; }
+
+  @media (min-width: 46rem) {
+    .opts { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  .opt {
+    font: inherit;
+    text-align: left;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 9px;
+    padding: 0.8rem 0.9rem;
+    cursor: pointer;
+    line-height: 1.35;
+  }
+
+  .opt:hover { border-color: var(--ink-soft); }
+
+  .opt:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  .opt[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--raised);
+    border-color: var(--ink);
+  }
+
+  /* ---------- verdict ---------- */
+
+  .verdict {
+    margin-top: 1.75rem;
+    padding-top: 1.75rem;
+    border-top: 1px solid var(--rule);
+  }
+
+  .verdict[hidden] { display: none; }
+
+  .verdict-name {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(1.9rem, 5.5vw, 2.6rem);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin: 0 0 0.5rem;
+    color: var(--pick, var(--ink));
+  }
+
+  .verdict p { margin: 0 0 0.75rem; max-width: 40rem; }
+
+  .close-call {
+    font-size: 0.93rem;
+    color: var(--ink-soft);
+    border-left: 3px solid var(--rule);
+    padding-left: 0.85rem;
+    margin: 1rem 0 0;
+    max-width: 40rem;
+  }
+
+  .reset {
+    font: inherit;
+    font-size: 0.93rem;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--ink-soft);
+    color: var(--ink-soft);
+    padding: 0 0 1px;
+    margin-top: 1.25rem;
+    cursor: pointer;
+  }
+  .reset:hover { color: var(--ink); border-color: var(--ink); }
+  .reset:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+  /* ---------- tool panels ---------- */
+
+  .tools { display: grid; gap: 1.25rem; }
+
+  @media (min-width: 52rem) {
+    .tools { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  .tool {
+    background: var(--raised);
+    border: 1px solid var(--rule);
+    border-top: 4px solid var(--accent);
+    border-radius: 10px;
+    padding: 1.4rem 1.35rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .tool[data-tool="chat"]   { --accent: var(--chat); }
+  .tool[data-tool="code"]   { --accent: var(--code); }
+  .tool[data-tool="cowork"] { --accent: var(--cowork); }
+
+  .tool h3 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 1.3rem;
+    letter-spacing: -0.015em;
+    margin: 0;
+    color: var(--accent);
+  }
+
+  .tool .where {
+    color: var(--ink-soft);
+    font-size: 0.88rem;
+    margin: 0.15rem 0 0.9rem;
+  }
+
+  .tool .role {
+    font-size: 0.98rem;
+    margin: 0 0 1.15rem;
+  }
+
+  .tool h4 {
+    font-family: var(--body);
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin: 0 0 0.4rem;
+  }
+
+  .tool ul {
+    margin: 0 0 1.15rem;
+    padding-left: 1.05rem;
+    font-size: 0.93rem;
+  }
+  .tool li { margin-bottom: 0.3rem; }
+  .tool li::marker { color: var(--accent); }
+
+  .tool .not li::marker { color: var(--rule); }
+
+  .tool .eg {
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid var(--rule);
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+  }
+  .tool .eg strong { color: var(--ink); font-weight: 600; }
+
+  /* ---------- scenario switcher ---------- */
+
+  .switch {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.1rem;
+  }
+
+  .switch button {
+    font: inherit;
+    font-size: 0.93rem;
+    background: var(--raised);
+    color: var(--ink-soft);
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    padding: 0.42rem 1rem;
+    cursor: pointer;
+  }
+  .switch button:hover { color: var(--ink); }
+  .switch button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .switch button[aria-selected="true"] {
+    background: var(--ink);
+    color: var(--raised);
+    border-color: var(--ink);
+  }
+
+  .scenario {
+    background: var(--raised);
+    border: 1px solid var(--rule);
+    border-left: 4px solid var(--accent, var(--rule));
+    border-radius: 10px;
+    padding: 1.35rem 1.4rem;
+    min-height: 8.5rem;
+  }
+  .scenario h3 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 1.15rem;
+    margin: 0 0 0.5rem;
+    color: var(--accent);
+  }
+  .scenario p { margin: 0; max-width: 42rem; }
+
+  /* ---------- rules ---------- */
+
+  .rules { border-top: 1px solid var(--rule); }
+  .rule-item {
+    border-bottom: 1px solid var(--rule);
+    padding: 1.05rem 0;
+  }
+  .rule-item h3 {
+    font-family: var(--body);
+    font-weight: 600;
+    font-size: 1rem;
+    margin: 0 0 0.2rem;
+  }
+  .rule-item p { margin: 0; color: var(--ink-soft); max-width: 44rem; font-size: 0.95rem; }
+
+  /* ---------- footer ---------- */
+
+  footer {
+    color: var(--ink-soft);
+    font-size: 0.9rem;
+    border-top: 1px solid var(--rule);
+    padding-top: 1.5rem;
+  }
+  footer ul { margin: 0; padding-left: 1.05rem; }
+  footer li { margin-bottom: 0.35rem; }
+  footer a { color: var(--chat); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .verdict, .scenario > * { animation: settle 0.28s ease-out; }
+    @keyframes settle {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: none; }
+    }
+  }
+
+  @media print {
+    body { background: #fff; }
+    .router, .switch, .reset { display: none; }
+    .tools { grid-template-columns: repeat(3, 1fr); }
+    section { margin-bottom: 1.5rem; break-inside: avoid; }
+    .tool { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="masthead">
+    <h1>Which Claude, when</h1>
+    <p>Three tools, three different kinds of work. Answer three questions to get a pick, or read the panels below and decide for yourself.</p>
+    <div class="lanes" aria-hidden="true"><span></span><span></span><span></span></div>
+  </header>
+
+  <!-- ============ ROUTER ============ -->
+  <section aria-labelledby="router-h">
+    <h2 id="router-h">Route a task</h2>
+    <p class="lede">Think of one real task you have right now, then answer for that task.</p>
+
+    <div class="router">
+
+      <div class="q" data-q="0">
+        <h3>1. What do you want to be holding at the end?</h3>
+        <div class="opts" role="group">
+          <button class="opt" data-a="0">An answer I'll read or paste somewhere</button>
+          <button class="opt" data-a="1">Working code in a project</button>
+          <button class="opt" data-a="2">A finished document, sheet, or set of files</button>
+        </div>
+      </div>
+
+      <div class="q" data-q="1" hidden>
+        <h3>2. What does the task have to touch?</h3>
+        <div class="opts" role="group">
+          <button class="opt" data-a="0">A file or two I can upload</button>
+          <button class="opt" data-a="1">A codebase — source, tests, git history</button>
+          <button class="opt" data-a="2">A folder of files sitting on my machine</button>
+        </div>
+      </div>
+
+      <div class="q" data-q="2" hidden>
+        <h3>3. How closely do you want to be involved?</h3>
+        <div class="opts" role="group">
+          <button class="opt" data-a="0">Steer it turn by turn</button>
+          <button class="opt" data-a="1">Watch each change land and correct course</button>
+          <button class="opt" data-a="2">Describe it once and check back later</button>
+        </div>
+      </div>
+
+      <div class="verdict" id="verdict" hidden aria-live="polite">
+        <p class="verdict-name" id="verdict-name"></p>
+        <p id="verdict-body"></p>
+        <p class="close-call" id="verdict-close" hidden></p>
+        <button class="reset" id="reset">Route another task</button>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ TOOL PANELS ============ -->
+  <section aria-labelledby="tools-h">
+    <h2 id="tools-h">The three tools</h2>
+    <p class="lede">The shortest version: Claude.ai is a conversation you steer, Claude Code is a collaborator in your repo, Cowork is a delegation you describe once.</p>
+
+    <div class="tools">
+
+      <article class="tool" data-tool="chat">
+        <h3>Claude.ai</h3>
+        <p class="where">Browser chat</p>
+        <p class="role">Exploratory thinking, Q&amp;A, drafting, and quick analysis of files you upload. Artifacts render a chart, doc, or small app right in the conversation, and you revise it by asking.</p>
+
+        <h4>Reach for it when</h4>
+        <ul>
+          <li>The task is light on context — one file, not a folder tree</li>
+          <li>You want to iterate fast and change direction mid-thought</li>
+          <li>Nothing is installed on the machine you're on</li>
+          <li>The output is something you'll read, copy, or share as a link</li>
+        </ul>
+
+        <h4>Not this one when</h4>
+        <ul class="not">
+          <li>You'd be uploading files all afternoon</li>
+          <li>Claude needs to run commands or write to your disk</li>
+          <li>You want to walk away and come back to finished work</li>
+        </ul>
+
+        <p class="eg"><strong>Your example.</strong> Upload a CSV, ask questions about the data, get an interactive chart Artifact you tweak by asking for changes.</p>
+      </article>
+
+      <article class="tool" data-tool="code">
+        <h3>Claude Code</h3>
+        <p class="where">Terminal or IDE agent</p>
+        <p class="role">Real software work. Claude reads the codebase, plans across files, writes and modifies code, runs commands and tests, and corrects itself — with git tracking every change so you can roll back.</p>
+
+        <h4>Reach for it when</h4>
+        <ul>
+          <li>The deliverable is code that has to run, not a description of code</li>
+          <li>The task spans files and needs project-wide understanding</li>
+          <li>Writing, running, and debugging belong in one loop</li>
+          <li>You need the file system, terminal, and dev tools</li>
+        </ul>
+
+        <h4>Not this one when</h4>
+        <ul class="not">
+          <li>The work isn't technical — the setup buys you nothing</li>
+          <li>You'd rather not have a terminal in the picture</li>
+          <li>You just want a quick answer or a one-off snippet</li>
+        </ul>
+
+        <p class="eg"><strong>Your example.</strong> Point it at a local project, have it read the data files, write the JS, and build an HTML dashboard with Chart.js you can open and iterate on.</p>
+      </article>
+
+      <article class="tool" data-tool="cowork">
+        <h3>Cowork</h3>
+        <p class="where">Claude Desktop app</p>
+        <p class="role">Agentic work without a terminal. You state an end goal instead of asking a question; Claude works through the folders you share and hands back finished documents, spreadsheets, or decks.</p>
+
+        <h4>Reach for it when</h4>
+        <ul>
+          <li>There's a clear deliverable and it touches a spread of files</li>
+          <li>The work is tedious and multi-step — sorting, extracting, summarizing</li>
+          <li>You'd rather describe it once than steer every turn</li>
+          <li>You want it to run on a schedule</li>
+        </ul>
+
+        <h4>Not this one when</h4>
+        <ul class="not">
+          <li>You're still working out what you want — that's a chat</li>
+          <li>The work lives in a codebase and needs git and a test loop</li>
+          <li>It would need folders you haven't granted access to</li>
+        </ul>
+
+        <p class="eg"><strong>Your example.</strong> Point it at a messy folder, have it sort files into subfolders, then write a summary document of what it found and did.</p>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- ============ SCENARIO ============ -->
+  <section aria-labelledby="scenario-h">
+    <h2 id="scenario-h">One folder of sales data, three ways</h2>
+    <p class="lede">Same material, different question asked of the tool. This is usually the fastest gut-check.</p>
+
+    <div class="switch" role="tablist" aria-label="Tool">
+      <button role="tab" aria-selected="true" data-s="chat" id="tab-chat" aria-controls="scenario">Claude.ai</button>
+      <button role="tab" aria-selected="false" data-s="code" id="tab-code" aria-controls="scenario">Claude Code</button>
+      <button role="tab" aria-selected="false" data-s="cowork" id="tab-cowork" aria-controls="scenario">Cowork</button>
+    </div>
+
+    <div class="scenario" id="scenario" role="tabpanel" aria-live="polite">
+      <h3 id="scenario-title"></h3>
+      <p id="scenario-body"></p>
+    </div>
+  </section>
+
+  <!-- ============ RULES ============ -->
+  <section aria-labelledby="rules-h">
+    <h2 id="rules-h">Rules of thumb</h2>
+    <div class="rules">
+      <div class="rule-item">
+        <h3>Conversation or deliverable</h3>
+        <p>Thinking out loud is chat. Wanting a finished file is Cowork or Code.</p>
+      </div>
+      <div class="rule-item">
+        <h3>Uploading files is a smell</h3>
+        <p>Past two or three uploads you've outgrown chat. Move to a tool with local access.</p>
+      </div>
+      <div class="rule-item">
+        <h3>The terminal is the fork between Code and Cowork</h3>
+        <p>Code work needs git and a run-test loop. Document and file work doesn't.</p>
+      </div>
+      <div class="rule-item">
+        <h3>Know your blast radius</h3>
+        <p>Cowork works in a contained workspace limited to the folders you share and asks before consequential actions. Claude Code runs directly in your project with fuller access.</p>
+      </div>
+      <div class="rule-item">
+        <h3>When unsure, start in chat</h3>
+        <p>It's the cheapest place to find out what you actually want. Escalate from there.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <ul>
+      <li>Chat, Cowork, and Code all live inside the Claude Desktop app as three modes. Cowork and Code exist elsewhere too, but desktop is where they reach your local files.</li>
+      <li>Cowork also runs on web and mobile; local file access is desktop-only. It's on the paid plans, not Free.</li>
+      <li>Anthropic's own comparison: <a href="https://claude.com/resources/tutorials/navigating-the-claude-desktop-app">navigating the Claude desktop app</a></li>
+    </ul>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var TOOLS = {
+    chat:   { name: "Claude.ai",   color: "var(--chat)" },
+    code:   { name: "Claude Code", color: "var(--code)" },
+    cowork: { name: "Cowork",      color: "var(--cowork)" }
+  };
+
+  // Each answer distributes weight across the three tools.
+  var WEIGHTS = [
+    [ {chat:3, code:0, cowork:0}, {chat:0, code:3, cowork:1}, {chat:1, code:0, cowork:3} ],
+    [ {chat:3, code:0, cowork:0}, {chat:0, code:3, cowork:0}, {chat:0, code:1, cowork:3} ],
+    [ {chat:3, code:1, cowork:0}, {chat:0, code:3, cowork:1}, {chat:0, code:1, cowork:3} ]
+  ];
+
+  var VERDICTS = {
+    chat: "Open a browser tab. Upload what you have, ask your first question, and let the shape of the task emerge as you go. If you find yourself uploading a fourth file or wishing Claude could save something to disk, that's your signal to move.",
+    code: "Open the project in Claude Code. Let it read the codebase before it writes anything, and lean on git — the ability to roll back is what makes it safe to let Claude work across several files at once.",
+    cowork: "Hand it to Cowork. Say what you want to be holding at the end rather than describing the steps, grant it only the folders the task needs, and check back rather than watching."
+  };
+
+  var SCENARIOS = {
+    chat: {
+      title: "Claude.ai",
+      body: "Upload one CSV, ask what's driving the Q3 dip, and get a chart Artifact back in five minutes. You'll be steering: each follow-up question sharpens the answer. Nothing lands on your disk unless you save it yourself."
+    },
+    code: {
+      title: "Claude Code",
+      body: "A real dashboard app in your repo — data pipeline, chart components, a dev server you can open, and a git history of how it got there. Slower to start, but the result is a thing you can keep running and extend."
+    },
+    cowork: {
+      title: "Cowork",
+      body: "All forty files read, cleaned, and merged into a formatted spreadsheet with working formulas, plus a written summary of what changed — delivered while you were at lunch. You described it once and reviewed the output."
+    }
+  };
+
+  var answers = [null, null, null];
+  var qs = Array.prototype.slice.call(document.querySelectorAll(".q"));
+  var verdict = document.getElementById("verdict");
+  var vName = document.getElementById("verdict-name");
+  var vBody = document.getElementById("verdict-body");
+  var vClose = document.getElementById("verdict-close");
+
+  qs.forEach(function (q, qi) {
+    q.querySelectorAll(".opt").forEach(function (btn) {
+      btn.setAttribute("aria-pressed", "false");
+      btn.addEventListener("click", function () {
+        answers[qi] = parseInt(btn.dataset.a, 10);
+        q.querySelectorAll(".opt").forEach(function (b) {
+          b.setAttribute("aria-pressed", b === btn ? "true" : "false");
+        });
+        if (qs[qi + 1]) qs[qi + 1].hidden = false;
+        evaluate();
+      });
+    });
+  });
+
+  function evaluate() {
+    if (answers.some(function (a) { return a === null; })) {
+      verdict.hidden = true;
+      return;
+    }
+
+    var score = { chat: 0, code: 0, cowork: 0 };
+    answers.forEach(function (a, qi) {
+      var w = WEIGHTS[qi][a];
+      score.chat += w.chat; score.code += w.code; score.cowork += w.cowork;
+    });
+
+    var ranked = Object.keys(score).sort(function (a, b) { return score[b] - score[a]; });
+    var win = ranked[0], second = ranked[1];
+
+    vName.textContent = TOOLS[win].name;
+    vName.style.setProperty("--pick", TOOLS[win].color);
+    vBody.textContent = VERDICTS[win];
+
+    if (score[win] - score[second] <= 2) {
+      vClose.hidden = false;
+      vClose.textContent = "Close call with " + TOOLS[second].name +
+        ". Your answers pull in two directions, which usually means the task is really two tasks. Split it: do the thinking in one tool, the producing in the other.";
+    } else {
+      vClose.hidden = true;
+    }
+
+    verdict.hidden = false;
+  }
+
+  document.getElementById("reset").addEventListener("click", function () {
+    answers = [null, null, null];
+    qs.forEach(function (q, i) {
+      if (i > 0) q.hidden = true;
+      q.querySelectorAll(".opt").forEach(function (b) { b.setAttribute("aria-pressed", "false"); });
+    });
+    verdict.hidden = true;
+    qs[0].scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+
+  // Scenario switcher
+  var tabs = Array.prototype.slice.call(document.querySelectorAll(".switch button"));
+  var panel = document.getElementById("scenario");
+  var sTitle = document.getElementById("scenario-title");
+  var sBody = document.getElementById("scenario-body");
+
+  function showScenario(key) {
+    tabs.forEach(function (t) { t.setAttribute("aria-selected", t.dataset.s === key ? "true" : "false"); });
+    panel.style.setProperty("--accent", TOOLS[key].color);
+    panel.setAttribute("aria-labelledby", "tab-" + key);
+    sTitle.textContent = SCENARIOS[key].title;
+    sBody.textContent = SCENARIOS[key].body;
+  }
+
+  tabs.forEach(function (t, i) {
+    t.addEventListener("click", function () { showScenario(t.dataset.s); });
+    t.addEventListener("keydown", function (e) {
+      var next = e.key === "ArrowRight" ? i + 1 : e.key === "ArrowLeft" ? i - 1 : null;
+      if (next === null) return;
+      e.preventDefault();
+      var target = tabs[(next + tabs.length) % tabs.length];
+      target.focus();
+      showScenario(target.dataset.s);
+    });
+  });
+
+  showScenario("chat");
+})();
+</script>
+</body>
+</html>

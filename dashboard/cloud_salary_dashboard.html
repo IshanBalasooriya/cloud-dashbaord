@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cloud Salary Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #000000;
+    --surface: #1c1c1e;
+    --surface-2: #2c2c2e;
+    --hairline: rgba(255, 255, 255, 0.08);
+    --text: #f5f5f7;
+    --text-secondary: rgba(235, 235, 245, 0.6);
+    --text-tertiary: rgba(235, 235, 245, 0.3);
+    --accent: #0a84ff;
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+            "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.47;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  header {
+    padding: 56px clamp(20px, 5vw, 48px) 12px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  header h1 {
+    margin: 0 0 6px;
+    font-size: clamp(2rem, 5vw, 2.75rem);
+    font-weight: 600;
+    letter-spacing: -0.021em;
+    line-height: 1.08;
+  }
+  header p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    letter-spacing: -0.01em;
+  }
+  header code, footer code {
+    font-family: "SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.85em;
+    color: var(--text);
+  }
+  main {
+    padding: 12px clamp(20px, 5vw, 48px) 64px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px 18px;
+    align-items: flex-end;
+    background: rgba(28, 28, 30, 0.72);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    border: 1px solid var(--hairline);
+    border-radius: 20px;
+    padding: 20px 22px;
+    margin-bottom: 18px;
+    position: sticky;
+    top: 12px;
+    z-index: 10;
+  }
+  .filters label {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 590;
+    color: var(--text-secondary);
+    gap: 6px;
+  }
+  .filters select {
+    font-family: var(--font);
+    font-size: 0.92rem;
+    padding: 9px 34px 9px 12px;
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    background-color: var(--surface-2);
+    color: var(--text);
+    min-width: 156px;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%238e8e93' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' d='M2.5 4.5 6 8l3.5-3.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    cursor: pointer;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+  .filters select:hover { border-color: rgba(255, 255, 255, 0.18); }
+  .filters select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.35);
+  }
+  .filters select option { background: var(--surface-2); color: var(--text); }
+  #reset {
+    font-family: var(--font);
+    font-size: 0.9rem;
+    font-weight: 590;
+    letter-spacing: -0.01em;
+    padding: 10px 18px;
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+  #reset:hover { background: #3197ff; }
+  #reset:active { transform: scale(0.97); }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 16px;
+    padding: 18px 18px 16px;
+  }
+  .stat .value {
+    font-size: 1.4rem;
+    font-weight: 600;
+    letter-spacing: -0.022em;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat .label {
+    margin-top: 2px;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 590;
+    color: var(--text-secondary);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 18px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 18px;
+    padding: 20px 22px;
+    min-width: 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  }
+  .card h2 {
+    margin: 0 0 16px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: -0.014em;
+  }
+  .card .sub {
+    color: var(--text-secondary);
+    font-weight: 400;
+    font-size: 0.82rem;
+    letter-spacing: 0;
+  }
+  .chart-wrap { position: relative; width: 100%; }
+  .chart-wrap.tall { height: 520px; }
+  .chart-wrap.med { height: 340px; }
+  .span-2 { grid-column: 1 / -1; }
+  .empty {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 40px 0;
+    font-size: 0.9rem;
+  }
+  footer {
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 0.8rem;
+    letter-spacing: -0.005em;
+    padding: 8px 20px 40px;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Cloud Salary Dashboard</h1>
+  <p>215 US cloud-role salary records &middot; source: <code>cloud_salaries.txt</code></p>
+</header>
+
+<main>
+  <div class="filters">
+    <label>Experience Level
+      <select id="f-level"><option value="">All</option></select>
+    </label>
+    <label>Cloud Platform
+      <select id="f-platform"><option value="">All</option></select>
+    </label>
+    <label>Company Size
+      <select id="f-size"><option value="">All</option></select>
+    </label>
+    <label>City
+      <select id="f-city"><option value="">All</option></select>
+    </label>
+    <button id="reset">Reset filters</button>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="grid">
+    <div class="card span-2">
+      <h2>Average salary by role <span class="sub">(sorted high &rarr; low)</span></h2>
+      <div class="chart-wrap tall"><canvas id="c-role"></canvas></div>
+    </div>
+
+    <div class="card">
+      <h2>Average salary by city</h2>
+      <div class="chart-wrap med"><canvas id="c-city"></canvas></div>
+    </div>
+
+    <div class="card">
+      <h2>Records by cloud platform</h2>
+      <div class="chart-wrap med"><canvas id="c-platform-share"></canvas></div>
+    </div>
+
+    <div class="card">
+      <h2>Average salary by cloud platform</h2>
+      <div class="chart-wrap med"><canvas id="c-platform-avg"></canvas></div>
+    </div>
+
+    <div class="card">
+      <h2>Average salary by experience level</h2>
+      <div class="chart-wrap med"><canvas id="c-level"></canvas></div>
+    </div>
+
+    <div class="card">
+      <h2>Average salary by company size</h2>
+      <div class="chart-wrap med"><canvas id="c-size"></canvas></div>
+    </div>
+
+    <div class="card span-2">
+      <h2>Top 10 highest-paid postings <span class="sub">(current filter)</span></h2>
+      <div class="chart-wrap med"><canvas id="c-top"></canvas></div>
+    </div>
+  </div>
+</main>
+
+<footer>Built with Chart.js. Hover any bar for exact figures; click legend entries to toggle series.</footer>
+
+<script id="csv" type="text/plain">
+Job Title,City,Salary,Experience Level,Cloud Platform,Company Size
+Cloud Solutions Architect,San Francisco,185000,Senior,AWS,Large
+Cloud Solutions Architect,New York,178000,Senior,Azure,Large
+Cloud Solutions Architect,Seattle,182000,Senior,AWS,Large
+Cloud Solutions Architect,Austin,165000,Mid-Level,GCP,Medium
+Cloud Solutions Architect,Chicago,160000,Mid-Level,AWS,Large
+Cloud Solutions Architect,Denver,158000,Mid-Level,Azure,Medium
+Cloud Solutions Architect,Boston,175000,Senior,GCP,Large
+Cloud Solutions Architect,Atlanta,155000,Mid-Level,AWS,Medium
+Cloud Solutions Architect,Los Angeles,172000,Senior,Azure,Large
+Cloud Solutions Architect,Dallas,152000,Mid-Level,AWS,Medium
+DevOps Engineer,San Francisco,170000,Senior,AWS,Large
+DevOps Engineer,New York,165000,Senior,Azure,Large
+DevOps Engineer,Seattle,168000,Senior,GCP,Large
+DevOps Engineer,Austin,148000,Mid-Level,AWS,Medium
+DevOps Engineer,Chicago,145000,Mid-Level,Azure,Medium
+DevOps Engineer,Denver,142000,Mid-Level,AWS,Small
+DevOps Engineer,Boston,160000,Senior,AWS,Large
+DevOps Engineer,Atlanta,138000,Mid-Level,GCP,Medium
+DevOps Engineer,Los Angeles,155000,Senior,Azure,Large
+DevOps Engineer,Dallas,140000,Mid-Level,AWS,Medium
+DevOps Engineer,San Francisco,135000,Junior,AWS,Medium
+DevOps Engineer,New York,130000,Junior,Azure,Large
+DevOps Engineer,Seattle,132000,Junior,GCP,Medium
+Cloud Security Engineer,San Francisco,180000,Senior,AWS,Large
+Cloud Security Engineer,New York,175000,Senior,Azure,Large
+Cloud Security Engineer,Seattle,178000,Senior,AWS,Large
+Cloud Security Engineer,Austin,158000,Mid-Level,GCP,Medium
+Cloud Security Engineer,Chicago,155000,Mid-Level,AWS,Large
+Cloud Security Engineer,Denver,150000,Mid-Level,Azure,Medium
+Cloud Security Engineer,Boston,172000,Senior,AWS,Large
+Cloud Security Engineer,Atlanta,148000,Mid-Level,Azure,Medium
+Cloud Security Engineer,Los Angeles,168000,Senior,GCP,Large
+Cloud Security Engineer,Dallas,145000,Mid-Level,AWS,Medium
+Cloud Data Engineer,San Francisco,168000,Senior,GCP,Large
+Cloud Data Engineer,New York,162000,Senior,AWS,Large
+Cloud Data Engineer,Seattle,165000,Senior,GCP,Large
+Cloud Data Engineer,Austin,145000,Mid-Level,AWS,Medium
+Cloud Data Engineer,Chicago,142000,Mid-Level,Azure,Large
+Cloud Data Engineer,Denver,138000,Mid-Level,GCP,Medium
+Cloud Data Engineer,Boston,158000,Senior,AWS,Large
+Cloud Data Engineer,Atlanta,135000,Mid-Level,GCP,Medium
+Cloud Data Engineer,Los Angeles,155000,Senior,Azure,Large
+Cloud Data Engineer,Dallas,132000,Mid-Level,AWS,Medium
+Cloud Data Engineer,San Francisco,125000,Junior,GCP,Medium
+Cloud Data Engineer,New York,120000,Junior,AWS,Large
+Cloud Network Engineer,San Francisco,160000,Senior,AWS,Large
+Cloud Network Engineer,New York,155000,Senior,Azure,Large
+Cloud Network Engineer,Seattle,158000,Senior,AWS,Large
+Cloud Network Engineer,Austin,140000,Mid-Level,Azure,Medium
+Cloud Network Engineer,Chicago,138000,Mid-Level,AWS,Medium
+Cloud Network Engineer,Denver,135000,Mid-Level,GCP,Small
+Cloud Network Engineer,Boston,152000,Senior,AWS,Large
+Cloud Network Engineer,Atlanta,132000,Mid-Level,Azure,Medium
+Cloud Network Engineer,Los Angeles,148000,Senior,GCP,Large
+Cloud Network Engineer,Dallas,130000,Mid-Level,AWS,Medium
+Site Reliability Engineer,San Francisco,178000,Senior,GCP,Large
+Site Reliability Engineer,New York,172000,Senior,AWS,Large
+Site Reliability Engineer,Seattle,175000,Senior,GCP,Large
+Site Reliability Engineer,Austin,155000,Mid-Level,AWS,Medium
+Site Reliability Engineer,Chicago,150000,Mid-Level,Azure,Large
+Site Reliability Engineer,Denver,148000,Mid-Level,GCP,Medium
+Site Reliability Engineer,Boston,168000,Senior,AWS,Large
+Site Reliability Engineer,Atlanta,145000,Mid-Level,GCP,Medium
+Site Reliability Engineer,Los Angeles,165000,Senior,Azure,Large
+Site Reliability Engineer,Dallas,142000,Mid-Level,AWS,Medium
+Site Reliability Engineer,San Francisco,140000,Junior,GCP,Large
+Site Reliability Engineer,Seattle,135000,Junior,AWS,Medium
+Cloud Database Administrator,San Francisco,155000,Senior,AWS,Large
+Cloud Database Administrator,New York,150000,Senior,Azure,Large
+Cloud Database Administrator,Seattle,152000,Senior,AWS,Large
+Cloud Database Administrator,Austin,135000,Mid-Level,Azure,Medium
+Cloud Database Administrator,Chicago,132000,Mid-Level,AWS,Medium
+Cloud Database Administrator,Denver,128000,Mid-Level,GCP,Small
+Cloud Database Administrator,Boston,148000,Senior,AWS,Large
+Cloud Database Administrator,Atlanta,125000,Mid-Level,Azure,Medium
+Cloud Database Administrator,Los Angeles,145000,Senior,GCP,Large
+Cloud Database Administrator,Dallas,122000,Mid-Level,AWS,Medium
+Cloud Platform Engineer,San Francisco,172000,Senior,GCP,Large
+Cloud Platform Engineer,New York,168000,Senior,AWS,Large
+Cloud Platform Engineer,Seattle,170000,Senior,Azure,Large
+Cloud Platform Engineer,Austin,150000,Mid-Level,GCP,Medium
+Cloud Platform Engineer,Chicago,148000,Mid-Level,AWS,Large
+Cloud Platform Engineer,Denver,145000,Mid-Level,Azure,Medium
+Cloud Platform Engineer,Boston,165000,Senior,GCP,Large
+Cloud Platform Engineer,Atlanta,142000,Mid-Level,AWS,Medium
+Cloud Platform Engineer,Los Angeles,162000,Senior,Azure,Large
+Cloud Platform Engineer,Dallas,138000,Mid-Level,GCP,Medium
+Cloud Platform Engineer,San Francisco,130000,Junior,AWS,Medium
+Cloud Platform Engineer,New York,125000,Junior,Azure,Large
+Cloud Consultant,San Francisco,165000,Senior,AWS,Large
+Cloud Consultant,New York,160000,Senior,Azure,Large
+Cloud Consultant,Seattle,162000,Senior,GCP,Large
+Cloud Consultant,Austin,142000,Mid-Level,AWS,Medium
+Cloud Consultant,Chicago,140000,Mid-Level,Azure,Medium
+Cloud Consultant,Denver,135000,Mid-Level,GCP,Small
+Cloud Consultant,Boston,158000,Senior,AWS,Large
+Cloud Consultant,Atlanta,132000,Mid-Level,Azure,Medium
+Cloud Consultant,Los Angeles,155000,Senior,GCP,Large
+Cloud Consultant,Dallas,128000,Mid-Level,AWS,Medium
+Cloud Infrastructure Engineer,San Francisco,170000,Senior,AWS,Large
+Cloud Infrastructure Engineer,New York,165000,Senior,Azure,Large
+Cloud Infrastructure Engineer,Seattle,168000,Senior,GCP,Large
+Cloud Infrastructure Engineer,Austin,148000,Mid-Level,AWS,Medium
+Cloud Infrastructure Engineer,Chicago,145000,Mid-Level,Azure,Large
+Cloud Infrastructure Engineer,Denver,142000,Mid-Level,GCP,Medium
+Cloud Infrastructure Engineer,Boston,162000,Senior,AWS,Large
+Cloud Infrastructure Engineer,Atlanta,138000,Mid-Level,Azure,Medium
+Cloud Infrastructure Engineer,Los Angeles,158000,Senior,GCP,Large
+Cloud Infrastructure Engineer,Dallas,135000,Mid-Level,AWS,Medium
+Cloud Support Engineer,San Francisco,130000,Mid-Level,AWS,Large
+Cloud Support Engineer,New York,125000,Mid-Level,Azure,Large
+Cloud Support Engineer,Seattle,128000,Mid-Level,AWS,Medium
+Cloud Support Engineer,Austin,112000,Junior,GCP,Medium
+Cloud Support Engineer,Chicago,110000,Junior,AWS,Medium
+Cloud Support Engineer,Denver,108000,Junior,Azure,Small
+Cloud Support Engineer,Boston,125000,Mid-Level,AWS,Large
+Cloud Support Engineer,Atlanta,105000,Junior,GCP,Small
+Cloud Support Engineer,Los Angeles,122000,Mid-Level,Azure,Medium
+Cloud Support Engineer,Dallas,102000,Junior,AWS,Small
+Cloud Automation Engineer,San Francisco,168000,Senior,AWS,Large
+Cloud Automation Engineer,New York,162000,Senior,Azure,Large
+Cloud Automation Engineer,Seattle,165000,Senior,GCP,Large
+Cloud Automation Engineer,Austin,145000,Mid-Level,AWS,Medium
+Cloud Automation Engineer,Chicago,142000,Mid-Level,Azure,Large
+Cloud Automation Engineer,Denver,138000,Mid-Level,GCP,Medium
+Cloud Automation Engineer,Boston,160000,Senior,AWS,Large
+Cloud Automation Engineer,Atlanta,135000,Mid-Level,Azure,Medium
+Cloud Automation Engineer,Los Angeles,155000,Senior,GCP,Large
+Cloud Automation Engineer,Dallas,132000,Mid-Level,AWS,Medium
+Cloud Migration Specialist,San Francisco,162000,Senior,AWS,Large
+Cloud Migration Specialist,New York,158000,Senior,Azure,Large
+Cloud Migration Specialist,Seattle,160000,Senior,GCP,Large
+Cloud Migration Specialist,Austin,142000,Mid-Level,AWS,Medium
+Cloud Migration Specialist,Chicago,138000,Mid-Level,Azure,Medium
+Cloud Migration Specialist,Denver,135000,Mid-Level,GCP,Small
+Cloud Migration Specialist,Boston,155000,Senior,AWS,Large
+Cloud Migration Specialist,Atlanta,130000,Mid-Level,Azure,Medium
+Cloud Migration Specialist,Los Angeles,152000,Senior,GCP,Large
+Cloud Migration Specialist,Dallas,128000,Mid-Level,AWS,Medium
+FinOps Analyst,San Francisco,145000,Senior,AWS,Large
+FinOps Analyst,New York,140000,Senior,Azure,Large
+FinOps Analyst,Seattle,142000,Senior,GCP,Large
+FinOps Analyst,Austin,125000,Mid-Level,AWS,Medium
+FinOps Analyst,Chicago,122000,Mid-Level,Azure,Medium
+FinOps Analyst,Denver,118000,Mid-Level,GCP,Small
+FinOps Analyst,Boston,138000,Senior,AWS,Large
+FinOps Analyst,Atlanta,115000,Mid-Level,Azure,Medium
+FinOps Analyst,Los Angeles,135000,Senior,GCP,Large
+FinOps Analyst,Dallas,112000,Mid-Level,AWS,Small
+Cloud AI/ML Engineer,San Francisco,190000,Senior,GCP,Large
+Cloud AI/ML Engineer,New York,185000,Senior,AWS,Large
+Cloud AI/ML Engineer,Seattle,188000,Senior,GCP,Large
+Cloud AI/ML Engineer,Austin,165000,Mid-Level,AWS,Medium
+Cloud AI/ML Engineer,Chicago,160000,Mid-Level,Azure,Large
+Cloud AI/ML Engineer,Denver,155000,Mid-Level,GCP,Medium
+Cloud AI/ML Engineer,Boston,182000,Senior,AWS,Large
+Cloud AI/ML Engineer,Atlanta,152000,Mid-Level,GCP,Medium
+Cloud AI/ML Engineer,Los Angeles,178000,Senior,Azure,Large
+Cloud AI/ML Engineer,Dallas,148000,Mid-Level,AWS,Medium
+Cloud AI/ML Engineer,San Francisco,145000,Junior,GCP,Large
+Cloud AI/ML Engineer,New York,140000,Junior,AWS,Large
+Cloud Systems Administrator,San Francisco,140000,Mid-Level,AWS,Large
+Cloud Systems Administrator,New York,135000,Mid-Level,Azure,Large
+Cloud Systems Administrator,Seattle,138000,Mid-Level,AWS,Medium
+Cloud Systems Administrator,Austin,120000,Junior,GCP,Medium
+Cloud Systems Administrator,Chicago,118000,Junior,AWS,Medium
+Cloud Systems Administrator,Denver,115000,Junior,Azure,Small
+Cloud Systems Administrator,Boston,135000,Mid-Level,AWS,Large
+Cloud Systems Administrator,Atlanta,112000,Junior,GCP,Small
+Cloud Systems Administrator,Los Angeles,132000,Mid-Level,Azure,Medium
+Cloud Systems Administrator,Dallas,108000,Junior,AWS,Small
+Cloud Cost Analyst,San Francisco,138000,Senior,AWS,Large
+Cloud Cost Analyst,New York,132000,Senior,Azure,Large
+Cloud Cost Analyst,Seattle,135000,Senior,GCP,Large
+Cloud Cost Analyst,Austin,118000,Mid-Level,AWS,Medium
+Cloud Cost Analyst,Chicago,115000,Mid-Level,Azure,Medium
+Cloud Cost Analyst,Denver,112000,Mid-Level,GCP,Small
+Cloud Cost Analyst,Boston,130000,Senior,AWS,Large
+Cloud Cost Analyst,Atlanta,108000,Mid-Level,Azure,Small
+Cloud Cost Analyst,Los Angeles,128000,Senior,GCP,Medium
+Cloud Cost Analyst,Dallas,105000,Mid-Level,AWS,Small
+Kubernetes Engineer,San Francisco,175000,Senior,GCP,Large
+Kubernetes Engineer,New York,170000,Senior,AWS,Large
+Kubernetes Engineer,Seattle,172000,Senior,GCP,Large
+Kubernetes Engineer,Austin,152000,Mid-Level,AWS,Medium
+Kubernetes Engineer,Chicago,148000,Mid-Level,Azure,Large
+Kubernetes Engineer,Denver,145000,Mid-Level,GCP,Medium
+Kubernetes Engineer,Boston,168000,Senior,AWS,Large
+Kubernetes Engineer,Atlanta,142000,Mid-Level,GCP,Medium
+Kubernetes Engineer,Los Angeles,165000,Senior,Azure,Large
+Kubernetes Engineer,Dallas,138000,Mid-Level,AWS,Medium
+Kubernetes Engineer,San Francisco,132000,Junior,GCP,Medium
+Kubernetes Engineer,Seattle,128000,Junior,AWS,Medium
+Cloud Compliance Analyst,San Francisco,148000,Senior,AWS,Large
+Cloud Compliance Analyst,New York,142000,Senior,Azure,Large
+Cloud Compliance Analyst,Seattle,145000,Senior,AWS,Large
+Cloud Compliance Analyst,Austin,128000,Mid-Level,GCP,Medium
+Cloud Compliance Analyst,Chicago,125000,Mid-Level,Azure,Medium
+Cloud Compliance Analyst,Denver,122000,Mid-Level,AWS,Small
+Cloud Compliance Analyst,Boston,140000,Senior,GCP,Large
+Cloud Compliance Analyst,Atlanta,118000,Mid-Level,Azure,Medium
+Cloud Compliance Analyst,Los Angeles,138000,Senior,AWS,Large
+Cloud Compliance Analyst,Dallas,115000,Mid-Level,GCP,Medium
+Cloud DevSecOps Engineer,San Francisco,178000,Senior,AWS,Large
+Cloud DevSecOps Engineer,New York,172000,Senior,Azure,Large
+Cloud DevSecOps Engineer,Seattle,175000,Senior,GCP,Large
+Cloud DevSecOps Engineer,Austin,155000,Mid-Level,AWS,Medium
+Cloud DevSecOps Engineer,Chicago,150000,Mid-Level,Azure,Large
+Cloud DevSecOps Engineer,Denver,148000,Mid-Level,GCP,Medium
+Cloud DevSecOps Engineer,Boston,170000,Senior,AWS,Large
+Cloud DevSecOps Engineer,Atlanta,145000,Mid-Level,Azure,Medium
+Cloud DevSecOps Engineer,Los Angeles,168000,Senior,GCP,Large
+Cloud DevSecOps Engineer,Dallas,142000,Mid-Level,AWS,Medium
+Cloud DevSecOps Engineer,San Francisco,138000,Junior,AWS,Large
+Cloud DevSecOps Engineer,New York,132000,Junior,Azure,Medium
+</script>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---- Parse embedded CSV ----------------------------------------------------
+  const raw = document.getElementById("csv").textContent.trim().split("\n");
+  raw.shift(); // drop header
+  const DATA = raw.map(function (line) {
+    const p = line.split(",");
+    return {
+      title: p[0].trim(),
+      city: p[1].trim(),
+      salary: +p[2],
+      level: p[3].trim(),
+      platform: p[4].trim(),
+      size: p[5].trim()
+    };
+  });
+
+  // ---- Helpers -------------------------------------------------------------
+  const fmtUSD = function (n) {
+    return "$" + Math.round(n).toLocaleString("en-US");
+  };
+  const mean = function (arr) {
+    return arr.length ? arr.reduce(function (a, b) { return a + b; }, 0) / arr.length : 0;
+  };
+  const median = function (arr) {
+    if (!arr.length) return 0;
+    const s = arr.slice().sort(function (a, b) { return a - b; });
+    const m = Math.floor(s.length / 2);
+    return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+  };
+  // group rows by a key, return [{key, avg, count}]
+  const avgByGroup = function (rows, keyFn) {
+    const buckets = {};
+    rows.forEach(function (r) {
+      const k = keyFn(r);
+      (buckets[k] || (buckets[k] = [])).push(r.salary);
+    });
+    return Object.keys(buckets).map(function (k) {
+      return { key: k, avg: mean(buckets[k]), count: buckets[k].length };
+    });
+  };
+  const uniqueSorted = function (fn) {
+    return Array.from(new Set(DATA.map(fn))).sort();
+  };
+
+  // Apple dark-mode system colors
+  const APPLE_COLORS = [
+    "#0a84ff", "#30d158", "#ff9f0a", "#bf5af2", "#64d2ff",
+    "#ff375f", "#ff453a", "#ffd60a", "#5e5ce6", "#ac8e68"
+  ];
+  const ACCENT = "#0a84ff";
+  const PLATFORM_COLORS = { AWS: "#ff9f0a", Azure: "#0a84ff", GCP: "#30d158" };
+  const LEVEL_ORDER = ["Junior", "Mid-Level", "Senior"];
+  const SIZE_ORDER = ["Small", "Medium", "Large"];
+  const cycle = function (n) {
+    const out = [];
+    for (let i = 0; i < n; i++) out.push(APPLE_COLORS[i % APPLE_COLORS.length]);
+    return out;
+  };
+
+  const GRID = "rgba(255,255,255,0.06)";
+  const TICK = "rgba(235,235,245,0.6)";
+
+  Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+  Chart.defaults.font.size = 12;
+  Chart.defaults.color = TICK;
+  Chart.defaults.borderColor = GRID;
+  Chart.defaults.plugins.legend.display = false;
+  Object.assign(Chart.defaults.plugins.tooltip, {
+    backgroundColor: "rgba(28,28,30,0.95)",
+    titleColor: "#f5f5f7",
+    bodyColor: "#f5f5f7",
+    borderColor: "rgba(255,255,255,0.1)",
+    borderWidth: 1,
+    cornerRadius: 10,
+    padding: 10,
+    displayColors: false,
+    titleFont: { weight: "600" }
+  });
+
+  const moneyTooltip = {
+    callbacks: {
+      label: function (ctx) {
+        const v = ctx.parsed.y != null && !isNaN(ctx.parsed.y) ? ctx.parsed.y : ctx.parsed.x;
+        return fmtUSD(v);
+      }
+    }
+  };
+  const moneyAxis = {
+    grid: { color: GRID, drawBorder: false },
+    border: { display: false },
+    ticks: {
+      color: TICK,
+      callback: function (v) { return "$" + (v / 1000) + "k"; }
+    }
+  };
+  const catAxis = {
+    grid: { display: false, drawBorder: false },
+    border: { display: false },
+    ticks: { color: TICK }
+  };
+
+  // ---- Populate filter dropdowns -------------------------------------------
+  const selectors = {
+    level: document.getElementById("f-level"),
+    platform: document.getElementById("f-platform"),
+    size: document.getElementById("f-size"),
+    city: document.getElementById("f-city")
+  };
+  LEVEL_ORDER.forEach(function (v) { selectors.level.add(new Option(v, v)); });
+  uniqueSorted(function (r) { return r.platform; }).forEach(function (v) { selectors.platform.add(new Option(v, v)); });
+  SIZE_ORDER.forEach(function (v) { selectors.size.add(new Option(v, v)); });
+  uniqueSorted(function (r) { return r.city; }).forEach(function (v) { selectors.city.add(new Option(v, v)); });
+
+  // ---- Chart registry -----------------------------------------------------
+  const charts = {};
+  const make = function (id, config) {
+    if (charts[id]) charts[id].destroy();
+    charts[id] = new Chart(document.getElementById(id).getContext("2d"), config);
+  };
+
+  const barConfig = function (labels, values, opts) {
+    opts = opts || {};
+    return {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [{
+          data: values,
+          backgroundColor: opts.colors || ACCENT,
+          borderRadius: 6,
+          borderSkipped: false,
+          maxBarThickness: 48,
+          barThickness: opts.barThickness
+        }]
+      },
+      options: {
+        indexAxis: opts.horizontal ? "y" : "x",
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 500, easing: "easeOutCubic" },
+        plugins: { tooltip: opts.tooltip || moneyTooltip, legend: { display: false } },
+        scales: opts.horizontal
+          ? { x: Object.assign({ beginAtZero: opts.beginAtZero }, moneyAxis),
+              y: Object.assign({}, catAxis, { ticks: { color: TICK, autoSkip: false } }) }
+          : { y: Object.assign({ beginAtZero: opts.beginAtZero }, moneyAxis), x: catAxis }
+      }
+    };
+  };
+
+  // ---- Render -------------------------------------------------------------
+  const statsEl = document.getElementById("stats");
+
+  function render() {
+    const f = {
+      level: selectors.level.value,
+      platform: selectors.platform.value,
+      size: selectors.size.value,
+      city: selectors.city.value
+    };
+    const rows = DATA.filter(function (r) {
+      return (!f.level || r.level === f.level) &&
+             (!f.platform || r.platform === f.platform) &&
+             (!f.size || r.size === f.size) &&
+             (!f.city || r.city === f.city);
+    });
+
+    // summary cards
+    const sal = rows.map(function (r) { return r.salary; });
+    const cards = [
+      ["Records", rows.length.toLocaleString()],
+      ["Average salary", rows.length ? fmtUSD(mean(sal)) : "—"],
+      ["Median salary", rows.length ? fmtUSD(median(sal)) : "—"],
+      ["Lowest", rows.length ? fmtUSD(Math.min.apply(null, sal)) : "—"],
+      ["Highest", rows.length ? fmtUSD(Math.max.apply(null, sal)) : "—"]
+    ];
+    statsEl.innerHTML = cards.map(function (c) {
+      return '<div class="stat"><div class="value">' + c[1] + '</div><div class="label">' + c[0] + '</div></div>';
+    }).join("");
+
+    if (!rows.length) {
+      Object.keys(charts).forEach(function (k) { charts[k].destroy(); delete charts[k]; });
+      return;
+    }
+
+    // by role (horizontal, sorted desc)
+    const roleG = avgByGroup(rows, function (r) { return r.title; })
+      .sort(function (a, b) { return b.avg - a.avg; });
+    make("c-role", barConfig(
+      roleG.map(function (g) { return g.key; }),
+      roleG.map(function (g) { return g.avg; }),
+      { horizontal: true, beginAtZero: true }
+    ));
+
+    // by city (sorted desc)
+    const cityG = avgByGroup(rows, function (r) { return r.city; })
+      .sort(function (a, b) { return b.avg - a.avg; });
+    make("c-city", barConfig(
+      cityG.map(function (g) { return g.key; }),
+      cityG.map(function (g) { return g.avg; }),
+      { beginAtZero: true, colors: cycle(cityG.length) }
+    ));
+
+    // platform: record share (doughnut)
+    const platG = avgByGroup(rows, function (r) { return r.platform; })
+      .sort(function (a, b) { return a.key.localeCompare(b.key); });
+    make("c-platform-share", {
+      type: "doughnut",
+      data: {
+        labels: platG.map(function (g) { return g.key; }),
+        datasets: [{
+          data: platG.map(function (g) { return g.count; }),
+          backgroundColor: platG.map(function (g) { return PLATFORM_COLORS[g.key] || ACCENT; }),
+          borderColor: "#1c1c1e",
+          borderWidth: 2,
+          hoverOffset: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "62%",
+        animation: { duration: 500, easing: "easeOutCubic" },
+        plugins: {
+          legend: {
+            display: true,
+            position: "bottom",
+            labels: { color: "#f5f5f7", usePointStyle: true, pointStyle: "circle", padding: 16 }
+          },
+          tooltip: {
+            callbacks: {
+              label: function (ctx) {
+                const total = ctx.dataset.data.reduce(function (a, b) { return a + b; }, 0);
+                const pct = ((ctx.parsed / total) * 100).toFixed(1);
+                return ctx.label + ": " + ctx.parsed + " (" + pct + "%)";
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // platform: avg salary
+    make("c-platform-avg", barConfig(
+      platG.map(function (g) { return g.key; }),
+      platG.map(function (g) { return g.avg; }),
+      { beginAtZero: true, colors: platG.map(function (g) { return PLATFORM_COLORS[g.key] || ACCENT; }) }
+    ));
+
+    // by experience level (fixed order)
+    const levelG = avgByGroup(rows, function (r) { return r.level; });
+    const levelSorted = LEVEL_ORDER.filter(function (l) {
+      return levelG.some(function (g) { return g.key === l; });
+    }).map(function (l) {
+      return levelG.find(function (g) { return g.key === l; });
+    });
+    make("c-level", barConfig(
+      levelSorted.map(function (g) { return g.key; }),
+      levelSorted.map(function (g) { return g.avg; }),
+      { beginAtZero: true, colors: cycle(levelSorted.length) }
+    ));
+
+    // by company size (fixed order)
+    const sizeG = avgByGroup(rows, function (r) { return r.size; });
+    const sizeSorted = SIZE_ORDER.filter(function (s) {
+      return sizeG.some(function (g) { return g.key === s; });
+    }).map(function (s) {
+      return sizeG.find(function (g) { return g.key === s; });
+    });
+    make("c-size", barConfig(
+      sizeSorted.map(function (g) { return g.key; }),
+      sizeSorted.map(function (g) { return g.avg; }),
+      { beginAtZero: true, colors: cycle(sizeSorted.length) }
+    ));
+
+    // top 10 highest-paid postings
+    const top = rows.slice().sort(function (a, b) { return b.salary - a.salary; }).slice(0, 10);
+    make("c-top", barConfig(
+      top.map(function (r) { return r.title + " – " + r.city + " (" + r.level + ")"; }),
+      top.map(function (r) { return r.salary; }),
+      { horizontal: true, beginAtZero: true,
+        colors: top.map(function (r) { return PLATFORM_COLORS[r.platform] || ACCENT; }) }
+    ));
+  }
+
+  // ---- Wire up ----------------------------------------------------------
+  Object.keys(selectors).forEach(function (k) {
+    selectors[k].addEventListener("change", render);
+  });
+  document.getElementById("reset").addEventListener("click", function () {
+    Object.keys(selectors).forEach(function (k) { selectors[k].value = ""; });
+    render();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
